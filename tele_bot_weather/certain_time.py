@@ -11,14 +11,14 @@ def weather_every_day():
     )
     data = api_weather.json()
     temp = data["main"]["temp"]
-    return f"Погода в товем городе {temp}"
+    return f"Погода в твоем городе {temp}"
 
 
 def time_weather(message):
     weather = weather_every_day()
     while True:
-        bot.send_message(message.chat.id, f'{weather}')
-        time.sleep(3)
+        bot.send_message(message.chat.id, f"{weather}")
+        time.sleep(3600)
 
 
 if __name__ == "__main__":

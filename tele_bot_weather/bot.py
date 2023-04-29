@@ -1,22 +1,11 @@
 from api.api_bot_site import bot
 from aiogram import types
-from module import func_weather, lat, lon, weather
+from module import lat, lon, weather
 from certain_time import time_weather
 import requests
 from api.api_bot_site import weather_token
-from datetime import datetime
-
-
-def func_keyboard():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn_hello = types.KeyboardButton("Поздороваться👋")
-    btn_name = types.KeyboardButton("Как тебя Зовут?🤔")
-    btn_weather = types.KeyboardButton("Узнать погоду в моем городе⛅")
-    btn_another_city = types.KeyboardButton("Узнать погоду в другом городе⛅")
-    certain_time = types.KeyboardButton('Отправка погоды кажды час⛅')
-    btn_question = types.KeyboardButton("Задать вопрос❓")
-    markup.add(btn_hello, btn_name, btn_weather, btn_another_city, certain_time, btn_question)
-    return markup
+import sqlite3
+from key_board_button import func_keyboard, questions
 
 
 @bot.message_handler(commands=["start", "help"])
@@ -32,6 +21,19 @@ def start_bot(message):
 
 @bot.message_handler(content_types="text")
 def commune(message: types.Message):
+    connect = sqlite3.connect("orders.db")
+    cursor = connect.cursor()
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS login_id(
+        id INTEGER
+        )"""
+    )
+    connect.commit()
+
+    user_id = [message.chat.id]
+    cursor.execute("INSERT INTO login_id VALUES(?);", user_id)
+    connect.commit()
+
     if message.text == "Поздороваться👋":
         bot.send_message(
             message.from_user.id,
@@ -41,7 +43,6 @@ def commune(message: types.Message):
 
     elif message.text == "Как тебя Зовут?🤔":
         bot.send_message(message.from_user.id, "Меня зовут Чаппи")
-        print(datetime.now().time())
 
     elif message.text == "Узнать погоду в моем городе⛅":
         api_weather = requests.get(
@@ -64,13 +65,34 @@ def commune(message: types.Message):
         bot.register_next_step_handler(message, weather)
 
     elif message.text == "Задать вопрос❓":
-        pass
+        bot.send_message(
+            message.from_user.id,
+            f"Слушаю вас{message.from_user.first_name}🤖",
+            reply_markup=[questions()],
+        )
+    elif message.text == "Как тебя Зовут?🤔":
+        bot.send_message(message.from_user.id, "Меня зовут Чаппи")
 
-    elif message.text == "Отправка погоды кажды час⛅":
+    elif message.text == "Назад🔙":
+        bot.send_message(
+            message.from_user.id,
+            "Вы вернулись в начало",
+            reply_markup=[func_keyboard()],
+        )
 
-        #bot.send_message(message.from_user.id, f"asd", reply_markup=[func_keyboard()])
-        bot.register_next_step_handler(message, time_weather)
+    elif message.text == "Отправка погоды каждый час⛅":
+        bot.send_message(
+            message.from_user.id,
+            "Вам будет отправлена погода каждый час,хорошего дня 😉",
+            reply_markup=[func_keyboard()],
+        )
+
+        time_weather(message)
+
+    else:
+        bot.send_message(
+            message.chat.id, text="На такую комманду я не запрограммировал бота"
+        )
 
 
 bot.polling(none_stop=True, interval=0)
-
